@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "*.packl": "nim",
+        "*.pasm": "asm",
+        "glfw3.h": "c",
+        "file.h": "c",
+        "vbo.h": "c"
+    }
+}
