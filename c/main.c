@@ -32,10 +32,10 @@ Shader fshader = {0};
 Program prog = {0};
 
 GLfloat vertices[] = {
-    // x,    y,     z
-    0.5,   -0.5,    0,
-    -0.5,  -0.5,    0,
-    0,      0.5,    0,
+    // x,    y,     z,      r,      g,      b,
+    0.5,   -0.5,    0,      1.0f,   0,      0, 
+    -0.5,  -0.5,    0,      0,   1.0f,      0,
+    0,      0.5,    0,      0,      0,   1.0f,
 };
 
 bool quit = false;
@@ -73,7 +73,7 @@ void init(void) {
 }
 
 void setup(void) {
-    vbo = vbo_init(vertices, 9 *  sizeof(GLfloat), GL_STATIC_DRAW);
+    vbo = vbo_init(vertices, sizeof(vertices), GL_STATIC_DRAW);
     vbo_create(&vbo);
     vbo_setData(&vbo);
 
@@ -84,7 +84,8 @@ void setup(void) {
 
     vao_create(&vao);
     vao_bind(&vao);
-    vao_set_layout_and_enable(&vao, &vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, 0);
+    vao_set_layout_and_enable(&vao, &vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
+    vao_set_layout_and_enable(&vao, &vbo, 1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 3 * sizeof(GLfloat));
 
     vshader = shader_init(vshader_filepath, GL_VERTEX_SHADER);
     shader_create(&vshader);
