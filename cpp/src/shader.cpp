@@ -15,7 +15,6 @@ bool Shader::loadSource() {
     std::ifstream shaderFile(this->filepath);
 
     if (!shaderFile.is_open()) {
-        std::cerr << "could not open the " << this->strType() << " shader file" << std::endl;
         return false;
     }
 

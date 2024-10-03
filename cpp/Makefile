@@ -1,6 +1,6 @@
 CC = g++
 GLAD = ./GLAD
-HEADERS = ./include 
+HEADERS = ./include
 
 INCLUDE = -I$(HEADERS) -I$(GLAD)/include
 SRC     = ./src/*.cpp $(GLAD)/src/glad.c
