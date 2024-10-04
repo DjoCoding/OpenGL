@@ -3,4 +3,8 @@ I'm making this repo for my future me who wanna do a graphics thing, but forgot 
 i wish you find this helpful.
 
 # Things i can do
-![alt text](image.png)
+## Triangle
+![triangle](./pictures/triangle.png)
+
+## Cube 
+![cube](./pictures/cube.png)
