@@ -4,6 +4,7 @@
 #include <EBO/ebo.hpp>
 #include <SHADER/shader.hpp>
 #include <PROGRAM/program.hpp>
+#include "CAMERA/camera.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
@@ -14,44 +15,45 @@
 GLfloat vs[] = {
     // Position             // Color (RGB)
     // Front face
-    -1.0f, -1.0f,  1.0f,   1.0f, 0.0f, 0.0f,   // Bottom-left  (Red)
-     1.0f, -1.0f,  1.0f,   1.0f, 0.0f, 0.0f,   // Bottom-right (Green)
-     1.0f,  1.0f,  1.0f,   1.0f, 0.0f, 0.0f,   // Top-right    (Blue)
-    -1.0f,  1.0f,  1.0f,   1.0f, 1.0f, 0.0f,   // Top-left     (Yellow)
+    -1.0f, -1.0f,  1.0f,   0.0f, 1.0f, 0.0f,   // Bottom-left  (Red)
+     1.0f, -1.0f,  1.0f,   0.0f, 1.0f, 0.0f,   // Bottom-right (Green)
+     1.0f,  1.0f,  1.0f,   0.0f, 1.0f, 0.0f,   // Top-right    (Blue)
+    -1.0f,  1.0f,  1.0f,   0.0f, 1.0f, 0.0f,   // Top-left     (Yellow)
 
     // Back face
-    -1.0f, -1.0f, -1.0f,   1.0f, 0.0f, 0.0f,   // Bottom-left  (Purple)
-     1.0f, -1.0f, -1.0f,   1.0f, 0.0f, 0.0f,   // Bottom-right (Cyan)
-     1.0f,  1.0f, -1.0f,   1.0f, 0.0f, 0.0f,   // Top-right    (Orange)
-    -1.0f,  1.0f, -1.0f,   1.0f, 0.0f, 0.0f    // Top-left     (Gray)
+    -1.0f, -1.0f, -1.0f,   0.0f, 1.0f, 0.0f,   // Bottom-left  (Purple)
+     1.0f, -1.0f, -1.0f,   0.0f, 1.0f, 0.0f,   // Bottom-right (Cyan)
+     1.0f,  1.0f, -1.0f,   0.0f, 1.0f, 0.0f,   // Top-right    (Orange)
+    -1.0f,  1.0f, -1.0f,   0.0f, 1.0f, 0.0f    // Top-left     (Gray)
 };
 
 
 GLuint indices[] = {
-    // Front face
+    // Front face (CCW)
     0, 1, 2,   // First triangle
-    2, 3, 0,   // Second triangle
+    0, 2, 3,   // Second triangle
 
-    // Back face
+    // Back face (CCW)
     4, 5, 6,   // First triangle
-    6, 7, 4,   // Second triangle
+    4, 6, 7,   // Second triangle
 
-    // Left face
+    // Left face (CCW)
     4, 0, 3,   // First triangle
-    3, 7, 4,   // Second triangle
+    4, 3, 7,   // Second triangle
 
-    // Right face
+    // Right face (CCW)
     1, 5, 6,   // First triangle
-    6, 2, 1,   // Second triangle
+    1, 6, 2,   // Second triangle
 
-    // Top face
+    // Top face (CCW)
     3, 2, 6,   // First triangle
-    6, 7, 3,   // Second triangle
+    3, 6, 7,   // Second triangle
 
-    // Bottom face
-    0, 4, 5,   // First triangle
-    5, 1, 0    // Second triangle
+    // Bottom face (CCW)
+    4, 0, 1,   // First triangle
+    4, 1, 5    // Second triangle
 };
+
 
 
 size_t vertexComponents = 6;
@@ -78,6 +80,8 @@ Shader vshader(vshaderFilePath, GL_VERTEX_SHADER);
 Shader fshader(fshaderFilePath, GL_FRAGMENT_SHADER);
 
 Program prog;
+
+Camera camera;
 
 void init() {
     if (SDL_Init(SDL_INIT_VIDEO)) {
@@ -115,7 +119,7 @@ void init() {
         exit(EXIT_FAILURE);
     }
 
-    return;
+    glEnable(GL_DEPTH_TEST);
 }
 
 void clean();
@@ -159,7 +163,7 @@ error:
 
 void prerender() {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glViewport(0, 0, windowWidth, windowHeight);
     
     
@@ -205,6 +209,18 @@ void update() {
                 case SDLK_ESCAPE:
                     quit = 1;
                     break;
+                case SDLK_z:
+                    camera.moveForward();
+                    break;
+                case SDLK_s:
+                    camera.moveBackward();
+                    break;
+                case SDLK_d:
+                    camera.moveRight();
+                    break;
+                case SDLK_q:
+                    camera.moveLeft();
+                    break;
             }
         }
     }
@@ -212,11 +228,14 @@ void update() {
 
     glm::mat4 model      = glm::mat4(1.0f);
     glm::mat4 projection = glm::mat4(1.0f);
+    glm::mat4 view       = glm::mat4(1.0f);
 
     model                = glm::translate(model, glm::vec3(0.0f, 0.0f, -10.0f));
     model                = glm::rotate(model, glm::radians(rotate), glm::vec3(0.0f, 1.0f, 0.0f));
 
-    projection           = glm::perspective(glm::radians(45.0f), (float) windowWidth / (float) windowHeight, 0.1f, 10.0f);
+
+    view                 = camera.getMatrix();
+    projection           = glm::perspective(glm::radians(45.0f), (float) windowWidth / (float) windowHeight, 0.1f, 100.0f);
 
 
     GLuint modelLocation = prog.findVariable("Model");
@@ -225,6 +244,15 @@ void update() {
     } else {
         prog.use();
         glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+    }
+
+
+    GLuint viewLocation = prog.findVariable("View");
+    if (viewLocation < 0) {
+        std::cerr << "could not find the view matrix location" << std::endl;        
+    } else {
+        prog.use();
+        glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
     }
 
     GLuint projectionLocation = prog.findVariable("Projection");
