@@ -16,8 +16,8 @@ typedef struct {
 
 Shader shader_init(const char *filepath, GLenum type);
 void shader_create(Shader *shader);
-void shader_load_source(Shader *shader);
-void shader_compile(Shader *shader);
+int shader_load_source(Shader *shader);
+int shader_compile(Shader *shader);
 void shader_delete(Shader *shader);
 void shader_clean(Shader *shader);
 

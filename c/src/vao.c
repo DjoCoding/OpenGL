@@ -24,6 +24,6 @@ void vao_set_layout_and_enable(VAO *vao, VBO *vbo, GLuint index, size_t num_item
     vao_unbind(vao);
 }
 
-void vao_clean(VAO *vao) {
+void vao_delete(VAO *vao) {
     glDeleteVertexArrays(1, &vao->id);
 }

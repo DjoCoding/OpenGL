@@ -1,114 +1,58 @@
-#include <stdbool.h>
-
 #define UTILS_IMPLEMENTATION
-
-#include <SDL2/SDL.h>
-#include <glad/glad.h>
-
-#include <VBO/vbo.h>
-#include <VAO/vao.h>
-#include <SHADER/shader.h>
-#include <PROGRAM/program.h>
-
-SDL_Window *window = NULL;
-SDL_Renderer *renderer = NULL;
-SDL_GLContext context = {0};
-
-const int window_width = 680;
-const int window_height = 420;
-const char *title = "SDL";
+#define VEC4_IMPLEMENTATION
 
 
-VBO vbo = {0};
-VAO vao = {0};
+#include <MESH/mesh.h>
+#include <APP/app.h>
 
 
 const char *vshader_filepath = "./Shaders/vshader.glsl";
 const char *fshader_filepath = "./Shaders/fshader.glsl";
 
-Shader vshader = {0};
-Shader fshader = {0};
 
-Program prog = {0};
-
-GLfloat vertices[] = {
+float vs[] = {
     // x,    y,     z,      r,      g,      b,
     0.5,   -0.5,    0,      1.0f,   0,      0, 
     -0.5,  -0.5,    0,      0,   1.0f,      0,
     0,      0.5,    0,      0,      0,   1.0f,
 };
-
-bool quit = false;
-
-void clean(void);
-
-void init(void) { 
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        fprintf(stderr, "failed to initialize the SDL library\n");
-        exit(EXIT_FAILURE);
-    };
+size_t stride  = 6 * sizeof(float);
+size_t vscount = 3;
 
 
-    window = SDL_CreateWindow(title, 0, 0, window_width, window_height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
-    if (!window) {
-        fprintf(stderr, "failed to initialize the SDL window\n");
-        SDL_Quit();
-        exit(EXIT_FAILURE);
-    }  
-    
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+App app = {0};
 
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+Shader vshader = {0};
+Shader fshader = {0};
 
-    context = SDL_GL_CreateContext(window);
 
-    if (!gladLoadGLLoader((GLADloadproc) SDL_GL_GetProcAddress)) {
-        fprintf(stderr, "could not import the OpenGL functions\n");
-        clean();
+#define GL_CLEAR_ERROR() while(glGetError() != GL_NO_ERROR) {} 
+
+#define GL_GET_ERROR(func) \
+    do { \
+        GL_CLEAR_ERROR() \
+        func; \
+        GLenum error = glGetError(); \
+        if (error != GL_NO_ERROR) {  \
+            fprintf(stderr, "opengl-error: on line: %u, on function: %s, error code: %d\n", __LINE__, __FUNCTION__, error); \
+            abort(); \
+        } \
+    } while(0)
+
+// load the shader source code from a file and compile it 
+Shader load_shader(const char *filepath, GLenum type) {
+    Shader shader = shader_init(filepath, type);
+    shader_create(&shader);
+
+    if (!shader_load_source(&shader)) {
         exit(EXIT_FAILURE);
     }
-}
 
-void setup(void) {
-    vbo = vbo_init(vertices, sizeof(vertices), GL_STATIC_DRAW);
-    vbo_create(&vbo);
-    vbo_setData(&vbo);
-
-    GLenum error = glGetError();
-    if (error != GL_NO_ERROR) {
-        fprintf(stderr, "OpenGL Error: %d\n", error);
+    if (!shader_compile(&shader)) {
+        exit(EXIT_FAILURE);
     }
 
-    vao_create(&vao);
-    vao_bind(&vao);
-    vao_set_layout_and_enable(&vao, &vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
-    vao_set_layout_and_enable(&vao, &vbo, 1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 3 * sizeof(GLfloat));
-
-    vshader = shader_init(vshader_filepath, GL_VERTEX_SHADER);
-    shader_create(&vshader);
-    shader_load_source(&vshader);
-    shader_compile(&vshader);
-    
-    fshader = shader_init(fshader_filepath, GL_FRAGMENT_SHADER);
-    shader_create(&fshader);
-    shader_load_source(&fshader);
-    shader_compile(&fshader);
-    
-    program_create(&prog);
-    program_attach_shader(&prog, &vshader);
-    program_attach_shader(&prog, &fshader);
-    program_link(&prog);
-
-    shader_delete(&vshader);
-    shader_delete(&fshader);
-}
-
-void getInfo(void) {
-    const char *gl_version = glGetString(GL_VERSION);
-    fprintf(stdout, "OpenGL version: %s\n", gl_version);
+    return shader;
 }
 
 
@@ -116,52 +60,67 @@ void update(void) {
     SDL_Event e =  {0};
     while(SDL_PollEvent(&e)) {
         if (e.type == SDL_QUIT) { 
-            quit = true;
+            app_quit(&app);
             return;
+        }
+
+        switch(e.key.keysym.sym) {
+            case SDLK_ESCAPE:
+                app_quit(&app);
+                break;
+            default:
+                break;
         }
     }   
 }
 
 
-void pre_render(void) {
-    glClearColor(0.24, 0.24, 0.24, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-}
+#define WINDOW_WIDTH  800
+#define WINDOW_HEIGHT 600
 
-void render(void) {
-    vao_bind(&vao);
-    vbo_bind(&vbo);
-    program_use(&prog);
+#define VERTEX_SHADER_FILE_PATH     "./Shaders/vshader.glsl"
+#define FRAGMENT_SHADER_FILE_PATH   "./Shaders/fshader.glsl"
 
-    glViewport(0, 0, window_width, window_height);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-    
-    SDL_GL_SwapWindow(window);
-}   
+int main(void) {
+    // create the application together with the opengl context 
+    app = app_create(WINDOW_WIDTH, WINDOW_HEIGHT, "triangle using opengl");
+    app_init(&app);
+    app_set_bg(&app, v4(0.0f, 0.0f, 0.0f, 1.0f));
 
 
-void clean(void) {
+    // load the used shaders 
+    // always load the shaders after initializing the application (cannot be initialized without an opengl context)
+    vshader = load_shader(VERTEX_SHADER_FILE_PATH, GL_VERTEX_SHADER);
+    fshader = load_shader(FRAGMENT_SHADER_FILE_PATH, GL_FRAGMENT_SHADER);
+
+
+    // create the mesh
+    Mesh triangle = mesh_create(vs, vscount, stride * vscount, GL_STATIC_DRAW);
+
+    // set the shaders used for this mesh, always set them before you initialize the mesh
+    GL_GET_ERROR(mesh_set_shader(&triangle, vshader, GL_VERTEX_SHADER));
+    GL_GET_ERROR(mesh_set_shader(&triangle, fshader, GL_FRAGMENT_SHADER));
+
+    GL_GET_ERROR(mesh_init(&triangle));
+
+    GL_GET_ERROR(mesh_design(&triangle, 0, 3, GL_FLOAT, GL_TRUE, 0));
+    GL_GET_ERROR(mesh_design(&triangle, 1, 3, GL_FLOAT, GL_TRUE, 3 * sizeof(float)));
+
+    while(app_is_running(&app)) {
+        update();
+        app_pre_render(&app);
+        GL_GET_ERROR(mesh_render(&triangle));
+        app_swap_buffers(&app);
+    }
+
+
+    shader_delete(&vshader);
+    shader_delete(&fshader);
+
     shader_clean(&vshader);
     shader_clean(&fshader);
 
-    vao_clean(&vao);
-    vbo_clean(&vbo);
-
-    SDL_DestroyWindow(window);
-    SDL_GL_DeleteContext(context);
-    SDL_Quit();
-}
-
-int main(void) {
-    init();
-    setup();
-
-    while(!quit) {
-        update();
-        pre_render();
-        render();
-    }
-
-    clean();
+    app_clean(&app);
+    
     return 0;
 }

@@ -12,26 +12,28 @@ void shader_create(Shader *shader) {
     shader->id = glCreateShader(shader->type);
 }
 
-void shader_load_source(Shader *shader) {
+int shader_load_source(Shader *shader) {
     const char *shader_type_cstr = (shader->type == GL_VERTEX_SHADER) ? "vertex" : "fragment";
     FILE *f = fopen(shader->filepath, "r");
 
     if (!f) { 
         fprintf(stderr, "could not open the %s shader source code file\n", shader_type_cstr);
-        exit(EXIT_FAILURE);
+        return 0;
     }
 
     if (!fcontent(f, &shader->content)) {
         fprintf(stderr, "could not read the %s shader file content\n", shader_type_cstr);
-        exit(EXIT_FAILURE);
+        return 0;
     }
 
     shader->content_size = strlen(shader->content);
 
     glShaderSource(shader->id, 1, (const GLchar *const *) &shader->content, (const GLint *) &shader->content_size);
+
+    return 1;
 }
 
-void shader_compile(Shader *shader) {
+int shader_compile(Shader *shader) {
     glCompileShader(shader->id);
 
     GLint success;
@@ -45,9 +47,9 @@ void shader_compile(Shader *shader) {
         
         glGetShaderInfoLog(shader->id, 512, (GLsizei *) &length, infoLog);
         printf("%s shader compilation failed: %s\n", shader_type_cstr, infoLog);
-        
-        exit(EXIT_FAILURE);
     }
+
+    return success; 
 }
 
 void shader_delete(Shader *shader) {

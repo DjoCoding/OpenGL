@@ -8,7 +8,7 @@ void program_attach_shader(Program *prog, Shader *shader) {
     glAttachShader(prog->id, shader->id);
 }
 
-void program_link(Program *prog) {
+int program_link(Program *prog) {
     glLinkProgram(prog->id);
 
     int success; 
@@ -19,9 +19,14 @@ void program_link(Program *prog) {
         glGetProgramInfoLog(prog->id, 512, NULL, infoLog);
         fprintf(stderr, "Program Linking Failed: %s\n", infoLog);
     }
+
+    return success;
 }
 
 void program_use(Program *prog) {
     glUseProgram(prog->id);
 } 
 
+void program_delete(Program *prog) {
+    glDeleteProgram(prog->id);
+}

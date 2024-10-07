@@ -1,8 +1,9 @@
 #include <VBO/vbo.h>
 
-VBO vbo_init(float *vs, size_t vsize, GLenum vusage) {
+VBO vbo_init(void *vs, size_t vsize, size_t vcount, GLenum vusage) {
     VBO vbo = {0};
     vbo.vs = vs;
+    vbo.vcount = vcount;
     vbo.vsize = vsize;
     vbo.vusage = vusage;
     return vbo;
@@ -14,11 +15,13 @@ void vbo_create(VBO *vbo) {
 
 void vbo_setData(VBO *vbo) {
     vbo_bind(vbo);
-    glBufferData(GL_ARRAY_BUFFER, vbo->vsize, (const void *)vbo->vs, vbo->vusage);
+    glBufferData(GL_ARRAY_BUFFER, vbo->vsize, vbo->vs, vbo->vusage);
+    vbo_unbind(vbo);
 }
 
-void vbo_update(VBO *vbo, float *vs, size_t vsize, GLenum vusage) {
+void vbo_update(VBO *vbo, void *vs, size_t vsize, size_t vcount, GLenum vusage) {
     vbo->vs = vs;
+    vbo->vcount = vcount;
     vbo->vsize = vsize;
     vbo->vusage = vusage;
 }
@@ -31,7 +34,7 @@ void vbo_unbind(VBO *vbo) {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void vbo_clean(VBO *vbo) {
+void vbo_delete(VBO *vbo) {
     glDeleteBuffers(1, &vbo->id);
 }
 
