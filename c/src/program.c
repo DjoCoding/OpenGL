@@ -27,6 +27,10 @@ void program_use(Program *prog) {
     glUseProgram(prog->id);
 } 
 
+GLint prog_find_uniform(Program *prog, char *uniform_id) {
+    return glGetUniformLocation(prog->id, uniform_id);
+}
+
 void program_delete(Program *prog) {
     glDeleteProgram(prog->id);
 }
